@@ -1,0 +1,166 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="EfPocModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="Members">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="bigint" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="HIC" Type="varchar" MaxLength="15" Nullable="false" />
+          <Property Name="PlanID" Type="char" MaxLength="5" Nullable="false" />
+          <Property Name="PBP" Type="varchar" MaxLength="3" Nullable="false" />
+          <Property Name="SegmentID" Type="varchar" MaxLength="3" Nullable="false" />
+          <Property Name="CurrentEffDate" Type="datetime" />
+          <Property Name="EnrollSource" Type="varchar" MaxLength="2" />
+          <Property Name="ProgramSource" Type="varchar" MaxLength="1" />
+          <Property Name="MemberStatus" Type="varchar" MaxLength="2" />
+          <Property Name="FirstName" Type="varchar" MaxLength="25" Nullable="false" />
+          <Property Name="LastName" Type="varchar" MaxLength="25" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Spans">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="bigint" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MemberId" Type="bigint" Nullable="false" />
+          <Property Name="SpanType" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="SpanValue" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="StartDate" Type="datetime" />
+          <Property Name="EndDate" Type="datetime" />
+        </EntityType>
+        <Association Name="FK_Spans_Members">
+          <End Role="Members" Type="Self.Members" Multiplicity="1" />
+          <End Role="Spans" Type="Self.Spans" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Members">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Spans">
+              <PropertyRef Name="MemberId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="EfPocModelStoreContainer">
+          <EntitySet Name="Members" EntityType="Self.Members" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Spans" EntityType="Self.Spans" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_Spans_Members" Association="Self.FK_Spans_Members">
+            <End Role="Members" EntitySet="Members" />
+            <End Role="Spans" EntitySet="Spans" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="EfPocModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="EfPocEntities" annotation:LazyLoadingEnabled="true" >
+          <EntitySet Name="Members" EntityType="EfPocModel.Member" />
+          <EntitySet Name="Spans" EntityType="EfPocModel.Span" />
+          <AssociationSet Name="FK_Spans_Members" Association="EfPocModel.FK_Spans_Members">
+            <End Role="Member" EntitySet="Members" />
+            <End Role="Span" EntitySet="Spans" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Member">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int64" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="HIC" Type="String" Nullable="false" MaxLength="15" FixedLength="false" Unicode="false" />
+          <Property Name="PlanID" Type="String" Nullable="false" MaxLength="5" FixedLength="true" Unicode="false" />
+          <Property Name="PBP" Type="String" Nullable="false" MaxLength="3" FixedLength="false" Unicode="false" />
+          <Property Name="SegmentID" Type="String" Nullable="false" MaxLength="3" FixedLength="false" Unicode="false" />
+          <Property Name="CurrentEffDate" Type="DateTime" Precision="3" />
+          <Property Name="EnrollSource" Type="String" MaxLength="2" FixedLength="false" Unicode="false" />
+          <Property Name="ProgramSource" Type="String" MaxLength="1" FixedLength="false" Unicode="false" />
+          <Property Name="MemberStatus" Type="String" MaxLength="2" FixedLength="false" Unicode="false" />
+          <Property Name="FirstName" Type="String" Nullable="false" MaxLength="25" FixedLength="false" Unicode="false" />
+          <Property Name="LastName" Type="String" Nullable="false" MaxLength="25" FixedLength="false" Unicode="false" />
+          <NavigationProperty Name="Spans" Relationship="EfPocModel.FK_Spans_Members" FromRole="Member" ToRole="Span" />
+        </EntityType>
+        <EntityType Name="Span">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int64" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MemberId" Type="Int64" Nullable="false" />
+          <Property Name="SpanType" Type="String" Nullable="false" MaxLength="10" FixedLength="false" Unicode="false" />
+          <Property Name="SpanValue" Type="String" Nullable="false" MaxLength="10" FixedLength="false" Unicode="false" />
+          <Property Name="StartDate" Type="DateTime" Precision="3" />
+          <Property Name="EndDate" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="Member" Relationship="EfPocModel.FK_Spans_Members" FromRole="Span" ToRole="Member" />
+        </EntityType>
+        <Association Name="FK_Spans_Members">
+          <End Type="EfPocModel.Member" Role="Member" Multiplicity="1" />
+          <End Type="EfPocModel.Span" Role="Span" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Member">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="Span">
+              <PropertyRef Name="MemberId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="EfPocModelStoreContainer" CdmEntityContainer="EfPocEntities" >
+          <EntitySetMapping Name="Members">
+            <EntityTypeMapping TypeName="EfPocModel.Member">
+              <MappingFragment StoreEntitySet="Members">
+                <ScalarProperty Name="LastName" ColumnName="LastName" />
+                <ScalarProperty Name="FirstName" ColumnName="FirstName" />
+                <ScalarProperty Name="MemberStatus" ColumnName="MemberStatus" />
+                <ScalarProperty Name="ProgramSource" ColumnName="ProgramSource" />
+                <ScalarProperty Name="EnrollSource" ColumnName="EnrollSource" />
+                <ScalarProperty Name="CurrentEffDate" ColumnName="CurrentEffDate" />
+                <ScalarProperty Name="SegmentID" ColumnName="SegmentID" />
+                <ScalarProperty Name="PBP" ColumnName="PBP" />
+                <ScalarProperty Name="PlanID" ColumnName="PlanID" />
+                <ScalarProperty Name="HIC" ColumnName="HIC" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Spans">
+            <EntityTypeMapping TypeName="EfPocModel.Span">
+              <MappingFragment StoreEntitySet="Spans">
+                <ScalarProperty Name="EndDate" ColumnName="EndDate" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="SpanValue" ColumnName="SpanValue" />
+                <ScalarProperty Name="SpanType" ColumnName="SpanType" />
+                <ScalarProperty Name="MemberId" ColumnName="MemberId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>
