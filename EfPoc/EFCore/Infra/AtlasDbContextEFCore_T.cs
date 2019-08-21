@@ -32,12 +32,12 @@ namespace EfPoc.Infra
         private static ILoggerFactory GetLoggerFactory()
         {
             IServiceCollection serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging(builder =>
-                    builder.AddConsole()
-                            .AddProvider(new CustomLoggingFileProvider("c:\\Logs\\logs.txt"))
-                            .AddApplicationInsights(ConfigurationManager.AppSettings["instrumentationKey"])
-                            .AddFilter(DbLoggerCategory.Database.Command.Name, 
-                                    LogLevel.Debug)); 
+            //serviceCollection.AddLogging(builder =>
+            //        builder.AddConsole()
+            //                .AddProvider(new CustomLoggingFileProvider("c:\\Logs\\logs.txt"))
+            //                .AddApplicationInsights(ConfigurationManager.AppSettings["instrumentationKey"])
+            //                .AddFilter(DbLoggerCategory.Database.Command.Name,
+            //                        LogLevel.Debug));
             return serviceCollection.BuildServiceProvider()
                     .GetService<ILoggerFactory>();
         }

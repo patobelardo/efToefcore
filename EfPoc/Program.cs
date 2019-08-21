@@ -46,9 +46,10 @@ namespace EfPoc
             await EFCoreGetAsync(databaseAccessRequest);
             await EFCoreUpdateAsync(databaseAccessRequest);
             await EFCoreDeleteAsync(databaseAccessRequest);
-
+            await EFCoreBulkInsertAsync(databaseAccessRequest);
             Console.WriteLine();
             Console.WriteLine("Done Performing CRUD using EF Core");
+            Console.ResetColor();
             Console.ReadLine();
 
         }
@@ -94,6 +95,7 @@ namespace EfPoc
                 }
             }
         }
+
 
         private static async Task GetAsync(DatabaseAccessRequest databaseAccessRequest)
         {
