@@ -28,7 +28,11 @@ namespace EfPoc
                 }
             };
 
-
+            try
+            {
+                await EFCoreBulkInsertCleanUpAsync(databaseAccessRequest);
+            }
+            finally { }
             await CreateAsync(databaseAccessRequest);
             await GetAsync(databaseAccessRequest);
             await UpdateAsync(databaseAccessRequest);
@@ -45,10 +49,27 @@ namespace EfPoc
             await EFCoreCreateAsync(databaseAccessRequest);
             await EFCoreGetAsync(databaseAccessRequest);
             await EFCoreUpdateAsync(databaseAccessRequest);
+
+            await EFCoreDTOUpdateAsync(databaseAccessRequest);
+            Console.ForegroundColor = ConsoleColor.Green;
+
             await EFCoreDeleteAsync(databaseAccessRequest);
+
+
+            await EFCoreBulkInsertAsync(databaseAccessRequest);
+            await EFCoreBulkUpdateAsync(databaseAccessRequest);
+
+
 
             Console.WriteLine();
             Console.WriteLine("Done Performing CRUD using EF Core");
+            Console.WriteLine("Press any key to cleanup the database");
+            Console.ReadLine();
+            //await EFCoreBulkInsertCleanUpAsync(databaseAccessRequest);
+
+            Console.WriteLine();
+            Console.WriteLine("Done");
+            Console.ResetColor();
             Console.ReadLine();
 
         }
@@ -94,6 +115,7 @@ namespace EfPoc
                 }
             }
         }
+
 
         private static async Task GetAsync(DatabaseAccessRequest databaseAccessRequest)
         {
