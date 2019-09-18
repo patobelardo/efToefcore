@@ -8,6 +8,8 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Linq;
 using Microsoft.Extensions.Logging.ApplicationInsights;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+
 namespace EfPoc.Infra
 {
     public class AtlasDbContextEFCore<T> : DbContext
@@ -18,6 +20,7 @@ namespace EfPoc.Infra
             // ReSharper disable once UnusedVariable - hack to include assembly in output folder
             var hack = typeof(System.Data.Entity.SqlServer.SqlProviderServices);
         }
+
 
         private static DbContextOptions GetDbConnection(DatabaseAccessRequest request)
         {
