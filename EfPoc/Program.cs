@@ -33,6 +33,16 @@ namespace EfPoc
                 await EFCoreBulkInsertCleanUpAsync(databaseAccessRequest);
             }
             finally { }
+
+            await EFCoreChangeTrackerAsync(databaseAccessRequest);
+
+            Console.WriteLine();
+            Console.WriteLine("Done");
+            Console.ResetColor();
+            Console.ReadLine();
+            return;
+
+
             await CreateAsync(databaseAccessRequest);
             await GetAsync(databaseAccessRequest);
             await UpdateAsync(databaseAccessRequest);
@@ -45,6 +55,8 @@ namespace EfPoc
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Performing CRUD using EF Core");
             Console.WriteLine();
+
+            
 
             await EFCoreCreateAsync(databaseAccessRequest);
             await EFCoreGetAsync(databaseAccessRequest);
@@ -59,7 +71,6 @@ namespace EfPoc
             await EFCoreBulkInsertAsync(databaseAccessRequest);
             await EFCoreBulkUpdateAsync(databaseAccessRequest);
 
-            await EFCoreChangeTrackerAsync(databaseAccessRequest);
 
             Console.WriteLine();
             Console.WriteLine("Done Performing CRUD using EF Core");

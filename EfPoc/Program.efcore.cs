@@ -12,6 +12,8 @@ using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Collections;
+using System.Reflection;
 
 namespace EfPoc
 {
@@ -163,103 +165,229 @@ namespace EfPoc
 
             using (var context = new EfPocEntitiesEFCore(databaseAccessRequest))
             {
-                try
+                Stopwatch w = new Stopwatch();
+                w.Start();
+                Console.WriteLine("Change Tracker");
+
+                var member = new Members
+                            {
+                                FirstName = "FirstName",
+                                LastName = "LastName",
+                                HIC = "HIC0001",
+                                PlanID = "Plan",
+                                PBP = "PBP",
+                                SegmentID = "SEG",
+                                CurrentEffDate = DateTime.Now
+                            };
+
+                var span = new Models.Spans
+                            {
+                                MemberId = member.Id,
+                                SpanType = "SECD",
+                                SpanValue = "111",
+                                StartDate = DateTime.Now
+                            };
+                var newspan = new Models.Spans
+                            {
+                                MemberId = member.Id,
+                                SpanType = "SECD",
+                                SpanValue = "222",
+                                StartDate = DateTime.Now
+                            };
+
+                member.Spans.Add(span);
+                member.Spans.Add(newspan);
+
+                context.Members.Add(member);
+
+                var member1 = new Members
+                            {
+                                FirstName = "FirstName1",
+                                LastName = "LastName1",
+                                HIC = "HIC0001",
+                                PlanID = "Plan",
+                                PBP = "PBP",
+                                SegmentID = "SEG",
+                                CurrentEffDate = DateTime.Now
+                            };
+
+                var span1 = new Models.Spans
+                            {
+                                MemberId = member1.Id,
+                                SpanType = "SECD",
+                                SpanValue = "123",
+                                StartDate = DateTime.Now
+                            };
+
+                member1.Spans.Add(span1);
+
+                context.Members.Add(member1);
+
+                await SaveChangesExtendedAsync(context.ChangeTracker.Entries(), context);
+            }
+        }
+
+        private static async Task SaveChangesExtendedAsync(IEnumerable<EntityEntry> entries, EfPocEntitiesEFCore context)
+        {
+            List<Operation> ops = new List<Operation>();
+
+            foreach (var item in entries)
+            {
+                Console.WriteLine($"Entity: {item.Entity.GetType().Name}. State: {item.State}");
+
+                //Adding a count per operation to decide when yo use bulk operations or the default savechanges method.
+                _addOperation(ref ops, item);
+
+                //foreach (var entry in item.Properties)
+                //{
+                //    Console.WriteLine("--- " +
+                //                $"Property '{entry.Metadata.Name}'" +
+                //                $" is {(entry.IsModified ? "modified" : "not modified")} " +
+                //                $"Current value: '{entry.CurrentValue}' " +
+                //                $"Original value: '{entry.OriginalValue}'");
+                //}
+            }
+
+            foreach(var op in ops)
+            {
+                Console.WriteLine("========================================================================");
+                Console.WriteLine($"Bulk Operation. Entity: {op.Type.Name}. State: {op.State}");
+                Console.WriteLine("========================================================================");
+
+                var items = entries.Where(e => e.Entity.GetType() == op.Type && e.State == op.State);
+
+
+                Type listType = typeof(List<>).MakeGenericType(op.Type);
+                IList entityList = (IList)Activator.CreateInstance(listType);
+                    
+                foreach (var newItem in items)
                 {
-                    Stopwatch w = new Stopwatch();
-                    w.Start();
-                    Console.WriteLine("Bulk Update: Add Child items");
+                    entityList.Add(newItem.Entity);
+                }
 
-                    //Get all Members
-                    var memberList = context.Members.Include(x => x.Spans);
-                    List<Spans> spanList = new List<Spans>();
+                var config = new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true };
 
-                    foreach (var member in memberList)
+                //For now I'm assuming we are always inserting
+                switch (op.Type.Name)
+                {
+                    case "Members":
+                        if (op.State == EntityState.Added)
+                            await context.BulkInsertAsync((IList<Members>)entityList, config);
+                        break; 
+                    case "Spans":
+                        if (op.State == EntityState.Added)
+                            await context.BulkInsertAsync((IList<Spans>)entityList, config);
+                        break;
+                    default:
+                        break;
+                }
+
+                List<ForeignKey> fkList = new List<ForeignKey>();
+
+                foreach (var entry in items)
+                {
+                    //Get Foreign Keys (properties refecencing Ids of parents)
+                    _fillfkList(ref fkList, entry);
+
+                    foreach (var fk in fkList)
                     {
-                        var span = new Spans
+                        Console.WriteLine("Updating Foreign Keys");
+                        //Getting just 1 collection of "Spans" (IGenericCollection<Spans>)
+                        var childItems = entry.Entity.GetType()
+                                                .GetProperties()
+                                                .Where(p => p.PropertyType.GenericTypeArguments
+                                                .Contains(fk.ForeignType))
+                                                .First().GetValue(entry.Entity, null);
+
+                        foreach (object child in (IEnumerable)childItems)
                         {
-                            MemberId = member.Id,
-                            SpanType = "SECD",
-                            SpanValue = $"SPAN {member.Id}",
-                            StartDate = DateTime.Now
-                        };
+                            Console.WriteLine($"Updating child class: {child.GetType()}");
+                            var parentIdValue = child.GetType().GetProperty(fk.ForeignPropertyName).GetValue(child);
+                            Console.WriteLine($"Current Value of {fk.ForeignPropertyName}: {parentIdValue}");
 
-                        //We need to remove this to avoid delays on savechanges
-                        member.Spans.Add(span);
+                            var parentIdValueNew = entry.Entity.GetType().GetProperty(fk.CurrentPropertyName).GetValue(entry.Entity);
+                            Console.WriteLine($"New Value: {parentIdValueNew}");
 
-                        spanList.Add(span);
-
-
-                        if (member.Id == 1200)
-                        {
-                            member.LastName = "new " + member.LastName;
+                            child.GetType().GetProperty(fk.ForeignPropertyName).SetValue(child, parentIdValueNew);
                         }
                     }
-
-                    var newmember = new Members
-                    {
-                        FirstName = "FirstName",
-                        LastName = "LastName",
-                        HIC = "PPP",
-                        PlanID = "Plan",
-                        PBP = "PBP",
-                        SegmentID = "SEG",
-                        CurrentEffDate = DateTime.Now
-                    };
-
-
-                    var span1 = new Spans
-                    {
-                        SpanType = "SECD",
-                        SpanValue = $"New SPAN ",
-                        StartDate = DateTime.Now
-                    };
-                    newmember.Spans.Add(span1);
-
-                    context.Members.Add(newmember);
-
-
-                    DisplayStates(context.ChangeTracker.Entries());
-
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
                 }
             }
         }
 
-        private static void DisplayStates(IEnumerable<EntityEntry> entries)
+        /// <summary>
+        /// Get Keys from an entry, and detect Foreign Keys on other classes, to modify the referenced ID.
+        /// </summary>
+        /// <param name="listFks"></param>
+        /// <param name="updated"></param>
+        private static void _fillfkList(ref List<ForeignKey> listFks, EntityEntry updated)
         {
-            foreach (var item in entries)
+            if (listFks.Count == 0)
             {
-                if (item.State != EntityState.Unchanged)
+                foreach (var entry in updated.Properties)
                 {
-                    if (item.State == EntityState.Modified)
+                    if (entry.Metadata.IsKey())
                     {
-                        Console.WriteLine("Entity Update");
-                        foreach (var entry in item.Properties)
+                        foreach (var containingKeys in entry.Metadata.GetContainingKeys())
                         {
-                            Console.WriteLine(
-                                        $"Property '{entry.Metadata.Name}'" +
-                                        $" is {(entry.IsModified ? "modified" : "not modified")} " +
-                                        $"Current value: '{entry.CurrentValue}' " +
-                                        $"Original value: '{entry.OriginalValue}'");
+                            foreach (var reference in containingKeys.GetReferencingForeignKeys())
+                            {
+                                foreach (var p in reference.Properties)
+                                {
+                                    listFks.Add(
+                                        new ForeignKey
+                                        {
+                                            CurrentPropertyName = entry.Metadata.Name,
+                                            ForeignPropertyName = p.Name,
+                                            ForeignType = p.DeclaringEntityType.ClrType
+                                        });
+                                }
+                            }
                         }
                     }
-                    if (item.Entity.GetType().Name == "Members" && item.State == EntityState.Added)
-                    {
-                        Console.WriteLine("Entity Inserted (with spans)");
-                        foreach (var entry in item.Properties)
-                        {
-                            Console.WriteLine(
-                                        $"Property '{entry.Metadata.Name}'" +
-                                        $" is {(entry.IsModified ? "modified" : "not modified")} " +
-                                        $"Current value: '{entry.CurrentValue}' " +
-                                        $"Original value: '{entry.OriginalValue}'");
-                        }
-                    }
-                    Console.WriteLine($"Entity: {item.Entity.GetType().Name}, State: { item.State.ToString()} ");
                 }
+            }
+        }
+
+        private static void _updateKey(PropertyEntry p)
+        {
+            foreach(var fk in p.Metadata.GetContainingForeignKeys())
+            {
+
+                throw new NotImplementedException();
+            }
+        }
+
+        private static List<T> _createListOf<T>(T type)
+        {
+            Type listGenericType = typeof(List<>);
+            Type list2 = listGenericType.MakeGenericType(typeof(T));
+            ConstructorInfo ci = list2.GetConstructor(new Type[] { });
+            List<T> list = (List<T>)ci.Invoke(new object[] { });
+
+
+            ////var list = new List<T>();
+            //foreach (var i in items)
+            //{
+            //    list.Add((T)i);
+            //}
+            return (List<T>)list;
+        }
+        private static void _addOperation(ref List<Operation> ops, EntityEntry item)
+        {
+            var op = ops.SingleOrDefault(x => x.Type == item.Entity.GetType() && x.State == item.State);
+            if (op == null)
+            {
+                ops.Add(new Operation
+                {
+                    Type = item.Entity.GetType(),
+                    State = item.State,
+                    EntityCount = 1
+                });
+            }
+            else
+            {
+                op.EntityCount++;
             }
         }
 
@@ -596,4 +724,18 @@ namespace EfPoc
             }
         }
     }
+
+    internal class Operation
+    {
+        public Type Type { get; set; }
+        public EntityState State { get; set; }
+        public int EntityCount { get; set; }
+    }
+    internal class ForeignKey
+    {
+        public Type ForeignType { get; set; }
+        public string ForeignPropertyName { get; set; }
+        public string CurrentPropertyName { get; set; }
+    }
 }
+
